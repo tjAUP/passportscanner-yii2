@@ -17,20 +17,15 @@ package. Composer installs the core package as its dependency:
 ```sh
 composer config repositories.passportscanner vcs https://github.com/tjAUP/passportscanner
 composer config repositories.passportscanner-yii2 vcs https://github.com/tjAUP/passportscanner-yii2
-composer require "tjaup/passportscanner-yii2:^1.0"
+composer require "tjaup/passportscanner-yii2:*"
 ```
 
 Both repository entries are needed because Composer does not inherit
-repository settings from dependencies. Commit your application's
-`composer.json` and `composer.lock`; deployment with `composer install` uses
-the locked versions. For existing applications that directly require
-`tjaup/passportscanner`, replace that requirement with
-`tjaup/passportscanner-yii2`:
-
-```sh
-composer remove tjaup/passportscanner --no-update
-composer require "tjaup/passportscanner-yii2:^1.0" -W
-```
+repository settings from dependencies. `*` lets Composer select the latest
+compatible release available when you run `composer require` or
+`composer update tjaup/passportscanner-yii2 -W`. `composer install` uses the
+versions recorded in `composer.lock`; commit that file for reproducible
+deployments. Review major upgrades before deploying them.
 
 The PHP widget class names stay the same.
 
@@ -141,18 +136,27 @@ midnight UTC. The older `ymd` and `dmy` settings still produce their original
 | `lastName` | Surname |
 | `title` | `MR` or `MS` |
 | `gender` | `male` or `female` |
-| `passport` | Passport number, when verified |
+| `passport` | Passport number, when verified; automatically mapped to the widget input |
+| `passportNo` | The same verified passport number, as an optional additional mapping |
 | `dob` | Date of birth, when verified |
 | `expiry` | Expiry date, when verified |
 | `nationality` | Value from `countryNames` |
+| `nationalityCode` | Three-letter nationality code from the MRZ |
+| `documentCode` | Passport document code from the MRZ |
+| `issuingCountryCode` | Three-letter issuing country or organization code |
+| `sex` | MRZ sex marker, `M` or `F` when present |
+| `optionalData` | Issuer-defined MRZ data, only when its check digit passes |
 | `passportImg` | Selected or captured image file |
 
 The scanner dispatches a bubbling `passportscanner:result` event on the
 passport input after a usable scan. The event's `detail.fields` contains the
-accepted MRZ values. Your form code can listen for that event if it needs to
-react to a scan. Each widget keeps its own scanner state, so several travelers
-can be scanned on the same page. Opening a camera closes any other scanner's
-camera; image uploads remain independent.
+accepted MRZ values, including `detail.fields.passportNo`, and
+`detail.checks` reports the passport, birth date, expiry date, optional data,
+and composite check results. The optional data has no universal meaning;
+some issuers use it for a personal number. Your form code can listen for the
+event if it needs to react to a scan. Each widget keeps its own scanner state,
+so several travelers can be scanned on the same page. Opening a camera closes
+any other scanner's camera; image uploads remain independent.
 
 Check every populated value against the passport before saving. The widget
 does not save the form or upload the image.
