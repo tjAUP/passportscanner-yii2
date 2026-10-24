@@ -48,8 +48,10 @@ including the local OCR worker, core, and language data. No asset path is
 needed in the view. PHP registers the assets and markup; JavaScript performs
 the scan in the browser and calls `PassportScanner.init(config)`.
 
-For a complete form, define the corresponding attributes on your Yii2 model
-and render the inputs with IDs that match the widget's field selectors:
+### Complete Yii2 form example
+
+Define the corresponding attributes on your Yii2 model and render the inputs
+with IDs that match the widget's field selectors:
 
 ```php
 <?php
@@ -82,9 +84,14 @@ echo $form->field($model, 'nationality')->dropDownList(
     ],
     ['prompt' => 'Select nationality', 'id' => 'traveler-nationality']
 );
+echo $form->field($model, 'nationalityCode')->textInput(['id' => 'traveler-nationality-code']);
+echo $form->field($model, 'documentCode')->textInput(['id' => 'traveler-document-code']);
+echo $form->field($model, 'issuingCountryCode')->textInput(['id' => 'traveler-issuing-country-code']);
+echo $form->field($model, 'sex')->textInput(['id' => 'traveler-sex']);
+echo $form->field($model, 'optionalData')->textInput(['id' => 'traveler-optional-data']);
 echo $form->field($model, 'passportImg')->fileInput(['id' => 'traveler-passport-image']);
 
-echo $form->field($model, 'passport')->widget(PassportScanner::class, [
+echo $form->field($model, 'passportNo')->widget(PassportScanner::class, [
     'options' => ['id' => 'traveler-passport'],
     'fields' => [
         'name' => '#traveler-name',
@@ -95,6 +102,11 @@ echo $form->field($model, 'passport')->widget(PassportScanner::class, [
         'dob' => '#traveler-dob',
         'expiry' => '#traveler-expiry',
         'nationality' => '#traveler-nationality',
+        'nationalityCode' => '#traveler-nationality-code',
+        'documentCode' => '#traveler-document-code',
+        'issuingCountryCode' => '#traveler-issuing-country-code',
+        'sex' => '#traveler-sex',
+        'optionalData' => '#traveler-optional-data',
         'passportImg' => '#traveler-passport-image',
     ],
     'scannerOptions' => [
@@ -107,13 +119,30 @@ echo $form->field($model, 'passport')->widget(PassportScanner::class, [
     ],
 ])->label(false);
 
-echo Html::submitButton('Save');
+echo Html::tag('output', '', ['id' => 'traveler-scan-review', 'aria-live' => 'polite']);
+echo Html::submitButton('Save after checking the passport');
 ActiveForm::end();
+
+$this->registerJs(<<<'JS'
+document.addEventListener('passportscanner:result', function (event) {
+    if (event.target.id !== 'traveler-passport') return;
+    const { fields, checks, verifiedCount, complete } = event.detail;
+    document.getElementById('traveler-scan-review').textContent =
+        `Verified ${verifiedCount}/3 checked fields. ` +
+        (checks.passport && fields.passportNo ? 'Passport number read. ' : 'Check the passport number. ') +
+        (complete ? 'Review all values before saving.' : 'Fill missing values manually.');
+});
+JS
+);
 ```
 
-The widget always maps `passport` to its own text input. The other selectors
-must point to fields in the rendered form. `passportImg` must point to a file
-input if you want the selected or captured image attached to the form.
+The widget always maps the verified `passport` value to its own text input,
+even when the Yii2 model attribute is named `passportNo`. If your model uses
+`passport`, use that attribute in the widget call instead. The scan event
+provides the same number as `fields.passport` and `fields.passportNo`. The
+other selectors must point to fields in the rendered form. `passportImg` must
+point to a file input if you want the selected or captured image attached to
+the form.
 `scannerOptions` supports `dateFormat` and `countryNames`. The widget supplies
 the scanner container, passport input, and OCR asset URL automatically.
 Rendering the widget always enables its scanner controls.
@@ -173,19 +202,63 @@ use yii\helpers\Html;
 
 foreach ($travelers as $index => $traveler) {
     echo Html::beginTag('div', ['class' => 'traveler-row']);
+    echo $form->field($traveler, "[$index]name")
+        ->textInput(['class' => 'traveler-name']);
     echo $form->field($traveler, "[$index]firstName")
         ->textInput(['class' => 'traveler-first-name']);
+    echo $form->field($traveler, "[$index]lastName")
+        ->textInput(['class' => 'traveler-last-name']);
+    echo $form->field($traveler, "[$index]title")
+        ->dropDownList(['MR' => 'Mr', 'MS' => 'Ms'], ['prompt' => 'Select title', 'class' => 'traveler-title']);
+    echo $form->field($traveler, "[$index]gender")
+        ->dropDownList(['male' => 'Male', 'female' => 'Female'], ['prompt' => 'Select gender', 'class' => 'traveler-gender']);
+    echo $form->field($traveler, "[$index]dob")
+        ->input('date', ['class' => 'traveler-dob']);
+    echo $form->field($traveler, "[$index]expiry")
+        ->input('date', ['class' => 'traveler-expiry']);
+    echo $form->field($traveler, "[$index]nationality")
+        ->dropDownList(
+            ['Malaysia' => 'Malaysia', 'Singapore' => 'Singapore', 'United States' => 'United States'],
+            ['prompt' => 'Select nationality', 'class' => 'traveler-nationality']
+        );
+    echo $form->field($traveler, "[$index]nationalityCode")
+        ->textInput(['class' => 'traveler-nationality-code']);
+    echo $form->field($traveler, "[$index]documentCode")
+        ->textInput(['class' => 'traveler-document-code']);
+    echo $form->field($traveler, "[$index]issuingCountryCode")
+        ->textInput(['class' => 'traveler-issuing-country-code']);
+    echo $form->field($traveler, "[$index]sex")
+        ->textInput(['class' => 'traveler-sex']);
+    echo $form->field($traveler, "[$index]optionalData")
+        ->textInput(['class' => 'traveler-optional-data']);
     echo $form->field($traveler, "[$index]passportImg")
         ->fileInput(['class' => 'traveler-passport-image']);
-    echo $form->field($traveler, "[$index]passport")
+    echo $form->field($traveler, "[$index]passportNo")
         ->widget(PassportScanner::class, [
             'fields' => [
+                'name' => '.traveler-name',
                 'firstName' => '.traveler-first-name',
+                'lastName' => '.traveler-last-name',
+                'title' => '.traveler-title',
+                'gender' => '.traveler-gender',
+                'dob' => '.traveler-dob',
+                'expiry' => '.traveler-expiry',
+                'nationality' => '.traveler-nationality',
+                'nationalityCode' => '.traveler-nationality-code',
+                'documentCode' => '.traveler-document-code',
+                'issuingCountryCode' => '.traveler-issuing-country-code',
+                'sex' => '.traveler-sex',
+                'optionalData' => '.traveler-optional-data',
                 'passportImg' => '.traveler-passport-image',
             ],
             'scannerOptions' => [
                 'fieldRoot' => '.traveler-row',
                 'dateFormat' => 'Y-m-d',
+                'countryNames' => [
+                    'MY' => 'Malaysia',
+                    'SG' => 'Singapore',
+                    'US' => 'United States',
+                ],
             ],
         ]);
     echo Html::endTag('div');
