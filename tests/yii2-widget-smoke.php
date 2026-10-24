@@ -16,8 +16,14 @@ if ($argc !== 2 || !is_file($argv[1])) {
 
 require $argv[1];
 require dirname($argv[1]) . '/yiisoft/yii2/Yii.php';
-require dirname(__DIR__) . '/src/Yii2/PassportScannerAsset.php';
-require dirname(__DIR__) . '/src/PassportScanner.php';
+if (\Composer\InstalledVersions::isInstalled('tjaup/passportscanner-yii2')) {
+    if (!class_exists(PassportScanner::class) || !class_exists(PassportScannerAsset::class)) {
+        throw new RuntimeException('The installed Yii2 package did not autoload both classes.');
+    }
+} else {
+    require dirname(__DIR__) . '/src/Yii2/PassportScannerAsset.php';
+    require dirname(__DIR__) . '/src/PassportScanner.php';
+}
 
 $assetDirectory = sys_get_temp_dir() . '/passportscanner-widget-assets-' . bin2hex(random_bytes(8));
 FileHelper::createDirectory($assetDirectory);

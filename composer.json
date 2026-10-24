@@ -11,7 +11,8 @@
     },
     "autoload": {
         "psr-4": {
-            "TjAup\\": "src/"
+            "TjAup\\": "src/",
+            "TjAup\\PassportScanner\\Yii2\\": "src/Yii2/"
         }
     }
 }
