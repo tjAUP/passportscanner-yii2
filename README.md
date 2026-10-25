@@ -138,9 +138,18 @@ must point to a field in the rendered form. `passportImg` must
 point to a file input if you want the selected or captured image attached to
 the form.
 `scannerOptions` passes the browser scanner settings, including `dateFormat`,
-`countryNames`, `autoCaptureCount`, and `autoCaptureHoldSeconds`. The widget
+`countryNames`, `autoCaptureCount`, `autoCaptureHoldSeconds`, and `logResults`.
+The widget
 supplies the scanner container, disabled scanner input, and OCR asset URL automatically.
 Rendering the widget always enables its scanner controls.
+
+For debugging, add `'logResults' => true` inside `scannerOptions`. Each scan
+then calls `console.log()` with an array containing one object with every MRZ
+field. Missing or unverified values are `null`, such as `expiry: null` when
+the passport expiry was not read. The key is `expiry` even if the Yii2 model
+attribute is `passportExp`. The passport image and raw OCR text are excluded.
+Leave this option off outside debugging because the console displays personal
+passport details.
 
 `autoCaptureCount` sets the total automatic camera frames from 1 to 10,
 including the first readable frame. The example above uses 1 to capture

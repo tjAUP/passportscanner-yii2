@@ -83,7 +83,7 @@ try {
         'name' => 'passport_scan_1',
         'options' => ['id' => 'traveler-1-passport-scan'],
         'fields' => ['passportNo' => '#traveler-1-passport-no', 'firstName' => '.traveler-first-name'],
-        'scannerOptions' => ['fieldRoot' => '.traveler-row', 'dateFormat' => 'd/m/Y'],
+        'scannerOptions' => ['fieldRoot' => '.traveler-row', 'dateFormat' => 'd/m/Y', 'logResults' => true],
     ]);
     echo PassportScanner::widget([
         'name' => 'passport_scan_2',
@@ -130,7 +130,8 @@ try {
             ($config['fields']['firstName'] ?? null) !== '.traveler-first-name' ||
             ($config['fields']['passportNo'] ?? null) !== '#traveler-1-passport-no' ||
             ($config['fieldRoot'] ?? null) !== '.traveler-row' ||
-            ($config['dateFormat'] ?? null) !== ($index === 0 ? 'd/m/Y' : 'Y-m-d')) {
+            ($config['dateFormat'] ?? null) !== ($index === 0 ? 'd/m/Y' : 'Y-m-d') ||
+            ($config['logResults'] ?? false) !== ($index === 0)) {
             throw new RuntimeException('A widget instance has incorrect scanner configuration.');
         }
     }
