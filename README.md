@@ -65,7 +65,7 @@ use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
 $form = ActiveForm::begin([
-    'options' => ['enctype' => 'multipart/form-data'],
+    'options' => ['id' => 'traveler-form', 'enctype' => 'multipart/form-data'],
 ]);
 
 echo $form->field($model, 'name')->textInput(['id' => 'traveler-name']);
@@ -118,8 +118,11 @@ echo PassportScanner::widget([
         'passportImg' => '#traveler-passport-image',
     ],
     'scannerOptions' => [
+        'fieldRoot' => '#traveler-form',
         'dateFormat' => 'Y-m-d',
         'autoCaptureCount' => 1,
+        'autoCaptureHoldSeconds' => 0,
+        'logResults' => false,
         'countryNames' => [
             'MY' => 'Malaysia',
             'SG' => 'Singapore',
@@ -137,19 +140,20 @@ model uses `passport`, map `passport` to its input instead. Every selector
 must point to a field in the rendered form. `passportImg` must
 point to a file input if you want the selected or captured image attached to
 the form.
-`scannerOptions` passes the browser scanner settings, including `dateFormat`,
-`countryNames`, `autoCaptureCount`, `autoCaptureHoldSeconds`, and `logResults`.
-The widget
-supplies the scanner container, disabled scanner input, and OCR asset URL automatically.
+`scannerOptions` passes the browser scanner settings shown in the complete
+example: `fieldRoot`, `dateFormat`, `countryNames`, `autoCaptureCount`,
+`autoCaptureHoldSeconds`, and `logResults`. The widget supplies the scanner
+container, disabled scanner input, and OCR asset URL automatically.
 Rendering the widget always enables its scanner controls.
 
-For debugging, add `'logResults' => true` inside `scannerOptions`. Each scan
-then calls `console.log()` with an array containing one object with every MRZ
-field. Missing or unverified values are `null`, such as `expiry: null` when
-the passport expiry was not read. The key is `expiry` even if the Yii2 model
-attribute is `passportExp`. The passport image and raw OCR text are excluded.
-Leave this option off outside debugging because the console displays personal
-passport details.
+For debugging, change `'logResults' => false` to `true`. The browser then logs
+`PassportScanner scan results` with an array containing one object with every
+MRZ field. Missing or unverified values are `null`, such as `expiry: null` when
+the passport expiry was not read. Failed scans have `null` field values and
+include `accepted`, `verifiedCount`, and `checks`. The key is `expiry` even if
+the Yii2 model attribute is `passportExp`. The image and raw OCR text are
+excluded. Leave this option off outside debugging because the console
+displays accepted passport details.
 
 `autoCaptureCount` sets the total automatic camera frames from 1 to 10,
 including the first readable frame. The example above uses 1 to capture
@@ -270,7 +274,9 @@ foreach ($travelers as $index => $traveler) {
             'scannerOptions' => [
                 'fieldRoot' => '.traveler-row',
                 'dateFormat' => 'Y-m-d',
+                'autoCaptureCount' => 3,
                 'autoCaptureHoldSeconds' => 2,
+                'logResults' => false,
                 'countryNames' => [
                     'MY' => 'Malaysia',
                     'SG' => 'Singapore',
