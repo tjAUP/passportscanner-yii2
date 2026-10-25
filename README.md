@@ -95,13 +95,13 @@ echo $form->field($model, 'issuingCountryCode')->textInput(['id' => 'traveler-is
 echo $form->field($model, 'sex')->textInput(['id' => 'traveler-sex']);
 echo $form->field($model, 'optionalData')->textInput(['id' => 'traveler-optional-data']);
 echo $form->field($model, 'passportImg')->fileInput(['id' => 'traveler-passport-image']);
-echo $form->field($model, 'passportNo')->textInput(['id' => 'traveler-passport']);
+echo $form->field($model, 'passportNo')->textInput(['id' => 'traveler-passport-no']);
 
 echo PassportScanner::widget([
     'name' => 'passport_scan',
     'options' => ['id' => 'traveler-passport-scan'],
     'fields' => [
-        'passportNo' => '#traveler-passport',
+        'passportNo' => '#traveler-passport-no',
         'name' => '#traveler-name',
         'firstName' => '#traveler-first-name',
         'lastName' => '#traveler-last-name',
