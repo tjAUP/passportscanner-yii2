@@ -37,16 +37,19 @@ Use the widget in a Yii2 view:
 <?php
 use TjAup\PassportScanner;
 
-echo $form->field($model, 'passport')
-    ->widget(PassportScanner::className(), [])
+echo $form->field($model, 'passportNo')
+    ->widget(PassportScanner::class, [
+        'options' => ['id' => 'passport-no'],
+        'fields' => ['passportNo' => '#passport-no'],
+    ])
     ->label(false);
 ```
 
-This renders a text input bound to `$model->passport` and scanner controls.
+This renders a text input bound to `$model->passportNo` and scanner controls.
 The widget registers the browser script and publishes all scanner assets,
 including the local OCR worker, core, and language data. No asset path is
-needed in the view. PHP registers the assets and markup; JavaScript performs
-the scan in the browser and calls `PassportScanner.init(config)`.
+needed in the view. The widget supplies the browser code that scans and fills
+the mapped inputs. No page-level JavaScript is needed for form filling.
 
 ### Complete Yii2 form example
 
@@ -94,6 +97,7 @@ echo $form->field($model, 'passportImg')->fileInput(['id' => 'traveler-passport-
 echo $form->field($model, 'passportNo')->widget(PassportScanner::class, [
     'options' => ['id' => 'traveler-passport'],
     'fields' => [
+        'passportNo' => '#traveler-passport',
         'name' => '#traveler-name',
         'firstName' => '#traveler-first-name',
         'lastName' => '#traveler-last-name',
@@ -119,28 +123,15 @@ echo $form->field($model, 'passportNo')->widget(PassportScanner::class, [
     ],
 ])->label(false);
 
-echo Html::tag('output', '', ['id' => 'traveler-scan-review', 'aria-live' => 'polite']);
 echo Html::submitButton('Save after checking the passport');
 ActiveForm::end();
-
-$this->registerJs(<<<'JS'
-document.addEventListener('passportscanner:result', function (event) {
-    if (event.target.id !== 'traveler-passport') return;
-    const { fields, checks, verifiedCount, complete } = event.detail;
-    document.getElementById('traveler-scan-review').textContent =
-        `Verified ${verifiedCount}/3 checked fields. ` +
-        (checks.passport && fields.passportNo ? 'Passport number read. ' : 'Check the passport number. ') +
-        (complete ? 'Review all values before saving.' : 'Fill missing values manually.');
-});
-JS
-);
 ```
 
-The widget always maps the verified `passport` value to its own text input,
-even when the Yii2 model attribute is named `passportNo`. If your model uses
-`passport`, use that attribute in the widget call instead. The scan event
-provides the same number as `fields.passport` and `fields.passportNo`. The
-other selectors must point to fields in the rendered form. `passportImg` must
+The `passportNo` mapping explicitly points to the widget's own input. The
+scanner also fills that input automatically as `passport`; the two names hold
+the same verified number, and the input is updated once. If your model uses
+`passport`, use that attribute in the widget call instead. The other
+selectors must point to fields in the rendered form. `passportImg` must
 point to a file input if you want the selected or captured image attached to
 the form.
 `scannerOptions` supports `dateFormat` and `countryNames`. The widget supplies
@@ -166,7 +157,7 @@ midnight UTC. The older `ymd` and `dmy` settings still produce their original
 | `title` | `MR` or `MS` |
 | `gender` | `male` or `female` |
 | `passport` | Passport number, when verified; automatically mapped to the widget input |
-| `passportNo` | The same verified passport number, as an optional additional mapping |
+| `passportNo` | The same verified passport number; can map to the widget's own input |
 | `dob` | Date of birth, when verified |
 | `expiry` | Expiry date, when verified |
 | `nationality` | Value from `countryNames` |
@@ -235,7 +226,9 @@ foreach ($travelers as $index => $traveler) {
         ->fileInput(['class' => 'traveler-passport-image']);
     echo $form->field($traveler, "[$index]passportNo")
         ->widget(PassportScanner::class, [
+            'options' => ['id' => 'traveler-' . $index . '-passport'],
             'fields' => [
+                'passportNo' => '#traveler-' . $index . '-passport',
                 'name' => '.traveler-name',
                 'firstName' => '.traveler-first-name',
                 'lastName' => '.traveler-last-name',
