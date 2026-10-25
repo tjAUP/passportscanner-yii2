@@ -10,7 +10,7 @@ use yii\widgets\InputWidget;
 /** Optional Yii2 form widget for the framework-independent browser scanner. */
 class PassportScanner extends InputWidget
 {
-    /** @var array<string, string> CSS selectors for other form fields to fill. */
+    /** @var array<string, string> CSS selectors for form fields to fill. */
     public $fields = [];
 
     /** @var array<string, mixed> JSON-serializable PassportScanner.init options. */
@@ -26,8 +26,10 @@ class PassportScanner extends InputWidget
         $config['fields'] = $this->fields;
         Html::addCssClass($this->options, 'js-tjaup-passportscanner-input');
         $this->options['data-tjaup-passportscanner'] = Json::encode($config);
+        $this->options['disabled'] = true;
+        $this->options['value'] = '';
 
-        return $this->renderInputHtml('text')
+        return $this->renderInputHtml('hidden')
             . Html::tag('div', '', ['data-tjaup-passportscanner-container' => '1']);
     }
 }

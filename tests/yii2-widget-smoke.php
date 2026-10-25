@@ -16,7 +16,10 @@ if ($argc !== 2 || !is_file($argv[1])) {
 
 require $argv[1];
 require dirname($argv[1]) . '/yiisoft/yii2/Yii.php';
-if (\Composer\InstalledVersions::isInstalled('tjaup/passportscanner-yii2')) {
+if (getenv('PASSPORTSCANNER_TEST_LOCAL') === '1') {
+    require dirname(__DIR__) . '/src/Yii2/PassportScannerAsset.php';
+    require dirname(__DIR__) . '/src/PassportScanner.php';
+} elseif (\Composer\InstalledVersions::isInstalled('tjaup/passportscanner-yii2')) {
     if (!class_exists(PassportScanner::class) || !class_exists(PassportScannerAsset::class)) {
         throw new RuntimeException('The installed Yii2 package did not autoload both classes.');
     }
@@ -55,7 +58,7 @@ try {
     ]));
 
     $model = new class extends Model {
-        public $passport = 'A1234567';
+        public $passportNo = 'A1234567';
 
         public function formName()
         {
@@ -75,16 +78,19 @@ try {
         'method' => 'get',
         'enableClientScript' => false,
     ]);
-    echo $form->field($model, 'passport')->widget(PassportScanner::className(), [
-        'options' => ['id' => 'traveler-1-passport'],
-        'fields' => ['firstName' => '.traveler-first-name'],
+    echo $form->field($model, 'passportNo')->textInput(['id' => 'traveler-1-passport-no']);
+    echo PassportScanner::widget([
+        'name' => 'passport_scan_1',
+        'options' => ['id' => 'traveler-1-passport-scan'],
+        'fields' => ['passportNo' => '#traveler-1-passport-no', 'firstName' => '.traveler-first-name'],
         'scannerOptions' => ['fieldRoot' => '.traveler-row', 'dateFormat' => 'd/m/Y'],
-    ])->label(false);
-    echo $form->field($model, 'passport')->widget(PassportScanner::className(), [
-        'options' => ['id' => 'traveler-2-passport'],
-        'fields' => ['firstName' => '.traveler-first-name'],
+    ]);
+    echo PassportScanner::widget([
+        'name' => 'passport_scan_2',
+        'options' => ['id' => 'traveler-2-passport-scan'],
+        'fields' => ['passportNo' => '#traveler-1-passport-no', 'firstName' => '.traveler-first-name'],
         'scannerOptions' => ['fieldRoot' => '.traveler-row', 'dateFormat' => 'Y-m-d'],
-    ])->label(false);
+    ]);
     ActiveForm::end();
     $bundle = $view->assetBundles[PassportScannerAsset::class] ?? null;
     if ($bundle === null) {
@@ -122,6 +128,7 @@ try {
         $config = Json::decode(html_entity_decode($encoded, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         if (($config['assetBaseUrl'] ?? null) !== $bundle->baseUrl . '/' ||
             ($config['fields']['firstName'] ?? null) !== '.traveler-first-name' ||
+            ($config['fields']['passportNo'] ?? null) !== '#traveler-1-passport-no' ||
             ($config['fieldRoot'] ?? null) !== '.traveler-row' ||
             ($config['dateFormat'] ?? null) !== ($index === 0 ? 'd/m/Y' : 'Y-m-d')) {
             throw new RuntimeException('A widget instance has incorrect scanner configuration.');
@@ -131,10 +138,12 @@ try {
     if (substr_count($html, 'src="' . $scriptUrl . '"') !== 1) {
         throw new RuntimeException('The scanner script must load once for both widgets.');
     }
-    if (strpos($html, 'name="Traveler[passport]"') === false ||
+    if (strpos($html, 'name="Traveler[passportNo]"') === false ||
         strpos($html, 'value="A1234567"') === false ||
-        strpos($html, 'id="traveler-1-passport"') === false ||
-        strpos($html, 'id="traveler-2-passport"') === false ||
+        strpos($html, 'id="traveler-1-passport-scan"') === false ||
+        strpos($html, 'id="traveler-2-passport-scan"') === false ||
+        substr_count($html, 'type="hidden"') < 2 ||
+        substr_count($html, 'disabled') < 2 ||
         substr_count($html, 'data-tjaup-passportscanner-container="1"') !== 2) {
         throw new RuntimeException('The widgets did not render independent passport inputs and containers.');
     }

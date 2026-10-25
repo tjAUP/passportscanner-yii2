@@ -37,15 +37,17 @@ Use the widget in a Yii2 view:
 <?php
 use TjAup\PassportScanner;
 
-echo $form->field($model, 'passportNo')
-    ->widget(PassportScanner::class, [
-        'options' => ['id' => 'passport-no'],
-        'fields' => ['passportNo' => '#passport-no'],
-    ])
-    ->label(false);
+echo $form->field($model, 'passportNo')->textInput(['id' => 'passport-no']);
+echo PassportScanner::widget([
+    'name' => 'passport_scan',
+    'options' => ['id' => 'passport-scan'],
+    'fields' => ['passportNo' => '#passport-no'],
+]);
 ```
 
-This renders a text input bound to `$model->passportNo` and scanner controls.
+The widget renders a hidden, disabled `passport_scan` input and scanner
+controls. The verified number goes to the separate `passportNo` input. The
+scanner input is never submitted or filled with the passport number.
 The widget registers the browser script and publishes all scanner assets,
 including the local OCR worker, core, and language data. No asset path is
 needed in the view. The widget supplies the browser code that scans and fills
@@ -93,9 +95,11 @@ echo $form->field($model, 'issuingCountryCode')->textInput(['id' => 'traveler-is
 echo $form->field($model, 'sex')->textInput(['id' => 'traveler-sex']);
 echo $form->field($model, 'optionalData')->textInput(['id' => 'traveler-optional-data']);
 echo $form->field($model, 'passportImg')->fileInput(['id' => 'traveler-passport-image']);
+echo $form->field($model, 'passportNo')->textInput(['id' => 'traveler-passport']);
 
-echo $form->field($model, 'passportNo')->widget(PassportScanner::class, [
-    'options' => ['id' => 'traveler-passport'],
+echo PassportScanner::widget([
+    'name' => 'passport_scan',
+    'options' => ['id' => 'traveler-passport-scan'],
     'fields' => [
         'passportNo' => '#traveler-passport',
         'name' => '#traveler-name',
@@ -122,22 +126,20 @@ echo $form->field($model, 'passportNo')->widget(PassportScanner::class, [
             'US' => 'United States',
         ],
     ],
-])->label(false);
+]);
 
 echo Html::submitButton('Save after checking the passport');
 ActiveForm::end();
 ```
 
-The `passportNo` mapping explicitly points to the widget's own input. The
-scanner also fills that input automatically as `passport`; the two names hold
-the same verified number, and the input is updated once. If your model uses
-`passport`, use that attribute in the widget call instead. The other
-selectors must point to fields in the rendered form. `passportImg` must
+The `passportNo` mapping points to the separate passport number input. If your
+model uses `passport`, map `passport` to its input instead. Every selector
+must point to a field in the rendered form. `passportImg` must
 point to a file input if you want the selected or captured image attached to
 the form.
 `scannerOptions` passes the browser scanner settings, including `dateFormat`,
 `countryNames`, `autoCaptureCount`, and `autoCaptureHoldSeconds`. The widget
-supplies the scanner container, passport input, and OCR asset URL automatically.
+supplies the scanner container, disabled scanner input, and OCR asset URL automatically.
 Rendering the widget always enables its scanner controls.
 
 `autoCaptureCount` sets the total automatic camera frames from 1 to 10,
@@ -166,8 +168,8 @@ midnight UTC. The older `ymd` and `dmy` settings still produce their original
 | `lastName` | Surname |
 | `title` | `MR` or `MS` |
 | `gender` | `male` or `female` |
-| `passport` | Passport number, when verified; automatically mapped to the widget input |
-| `passportNo` | The same verified passport number; can map to the widget's own input |
+| `passport` | Passport number, when verified; map to a separate form input |
+| `passportNo` | The same verified passport number; map to a separate form input |
 | `dob` | Date of birth, when verified |
 | `expiry` | Expiry date, when verified |
 | `nationality` | Value from `countryNames` |
@@ -179,7 +181,7 @@ midnight UTC. The older `ymd` and `dmy` settings still produce their original
 | `passportImg` | Selected or captured image file |
 
 The scanner dispatches a bubbling `passportscanner:result` event on the
-passport input after a usable scan. The event's `detail.fields` contains the
+scanner input after a usable scan. The event's `detail.fields` contains the
 accepted MRZ values, including `detail.fields.passportNo`, and
 `detail.checks` reports the passport, birth date, expiry date, optional data,
 and composite check results. The optional data has no universal meaning;
@@ -235,10 +237,12 @@ foreach ($travelers as $index => $traveler) {
     echo $form->field($traveler, "[$index]passportImg")
         ->fileInput(['class' => 'traveler-passport-image']);
     echo $form->field($traveler, "[$index]passportNo")
-        ->widget(PassportScanner::class, [
-            'options' => ['id' => 'traveler-' . $index . '-passport'],
+        ->textInput(['class' => 'traveler-passport-no']);
+    echo PassportScanner::widget([
+            'name' => 'passport_scan_' . $index,
+            'options' => ['id' => 'traveler-' . $index . '-passport-scan'],
             'fields' => [
-                'passportNo' => '#traveler-' . $index . '-passport',
+                'passportNo' => '.traveler-passport-no',
                 'name' => '.traveler-name',
                 'firstName' => '.traveler-first-name',
                 'lastName' => '.traveler-last-name',
@@ -284,8 +288,8 @@ PassportScannerAsset::register($this);
 ```
 
 If a row is hidden but kept in the DOM, call
-`PassportScanner.stop(passportInput)` when hiding it and
-`PassportScanner.initFromElement(passportInput)` when showing it again.
+`PassportScanner.stop(scannerInput)` when hiding it and
+`PassportScanner.initFromElement(scannerInput)` when showing it again.
 `PassportScanner.stop()` without an argument stops all scanners. Keep Yii2
 input IDs and model indexes unique when cloning rows.
 
