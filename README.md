@@ -115,6 +115,7 @@ echo $form->field($model, 'passportNo')->widget(PassportScanner::class, [
     ],
     'scannerOptions' => [
         'dateFormat' => 'Y-m-d',
+        'autoCaptureCount' => 1,
         'countryNames' => [
             'MY' => 'Malaysia',
             'SG' => 'Singapore',
@@ -134,9 +135,18 @@ the same verified number, and the input is updated once. If your model uses
 selectors must point to fields in the rendered form. `passportImg` must
 point to a file input if you want the selected or captured image attached to
 the form.
-`scannerOptions` supports `dateFormat` and `countryNames`. The widget supplies
-the scanner container, passport input, and OCR asset URL automatically.
+`scannerOptions` passes the browser scanner settings, including `dateFormat`,
+`countryNames`, `autoCaptureCount`, and `autoCaptureHoldSeconds`. The widget
+supplies the scanner container, passport input, and OCR asset URL automatically.
 Rendering the widget always enables its scanner controls.
+
+`autoCaptureCount` sets the total automatic camera frames from 1 to 10,
+including the first readable frame. The example above uses 1 to capture
+immediately. Alternatively, set `autoCaptureHoldSeconds` to a time from 0 to
+30 seconds and omit the count; the scanner takes roughly one additional frame
+per second, up to 10 total. If both are set, it spreads the chosen frame count
+across the hold time. The default is 4 frames over 3 seconds. Manual camera
+capture and uploaded images still scan once.
 
 `dateFormat` uses [PHP `date_format()` tokens](https://www.php.net/manual/en/datetime.format.php)
 for both `dob` and `expiry`. For example, `Y/m/d` gives `1974/08/12`,
@@ -247,6 +257,7 @@ foreach ($travelers as $index => $traveler) {
             'scannerOptions' => [
                 'fieldRoot' => '.traveler-row',
                 'dateFormat' => 'Y-m-d',
+                'autoCaptureHoldSeconds' => 2,
                 'countryNames' => [
                     'MY' => 'Malaysia',
                     'SG' => 'Singapore',
