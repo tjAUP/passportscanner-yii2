@@ -94,6 +94,7 @@ echo $form->field($model, 'documentCode')->textInput(['id' => 'traveler-document
 echo $form->field($model, 'issuingCountryCode')->textInput(['id' => 'traveler-issuing-country-code']);
 echo $form->field($model, 'sex')->textInput(['id' => 'traveler-sex']);
 echo $form->field($model, 'optionalData')->textInput(['id' => 'traveler-optional-data']);
+echo $form->field($model, 'mrz')->textarea(['id' => 'traveler-mrz']);
 echo $form->field($model, 'passportImg')->fileInput(['id' => 'traveler-passport-image']);
 echo $form->field($model, 'passportNo')->textInput(['id' => 'traveler-passport-no']);
 
@@ -115,6 +116,7 @@ echo PassportScanner::widget([
         'issuingCountryCode' => '#traveler-issuing-country-code',
         'sex' => '#traveler-sex',
         'optionalData' => '#traveler-optional-data',
+        'mrz' => '#traveler-mrz',
         'passportImg' => '#traveler-passport-image',
     ],
     'scannerOptions' => [
@@ -122,6 +124,8 @@ echo PassportScanner::widget([
         'dateFormat' => 'Y-m-d',
         'autoCaptureCount' => 1,
         'autoCaptureHoldSeconds' => 0,
+        'language' => 'en',
+        'statusMessages' => [],
         'logResults' => false,
         'countryNames' => [
             'MY' => 'Malaysia',
@@ -142,18 +146,17 @@ point to a file input if you want the selected or captured image attached to
 the form.
 `scannerOptions` passes the browser scanner settings shown in the complete
 example: `fieldRoot`, `dateFormat`, `countryNames`, `autoCaptureCount`,
-`autoCaptureHoldSeconds`, and `logResults`. The widget supplies the scanner
+`autoCaptureHoldSeconds`, `language`, `statusMessages`, and `logResults`. The widget supplies the scanner
 container, disabled scanner input, and OCR asset URL automatically.
 Rendering the widget always enables its scanner controls.
 
-For debugging, change `'logResults' => false` to `true`. The browser then logs
-`PassportScanner scan results` with an array containing one object with every
-MRZ field. Missing or unverified values are `null`, such as `expiry: null` when
-the passport expiry was not read. Failed scans have `null` field values and
-include `accepted`, `verifiedCount`, and `checks`. The key is `expiry` even if
-the Yii2 model attribute is `passportExp`. The image and raw OCR text are
-excluded. Leave this option off outside debugging because the console
-displays accepted passport details.
+For debugging, set `'logResults' => true`. The console shows
+`PassportScanner scan results` as ordered `{field, value}` rows: scan checks,
+`mrz`, passport number, names, dates, and other details. Missing or unverified
+values are `null`. On rejected scans, `mrz` may still contain the unverified
+OCR candidate; other fields are `null`. The image and full raw OCR output
+are excluded. Keep logging off outside debugging because it exposes passport
+details. The expiry result key is `expiry`, even if your model uses `passportExp`.
 
 `autoCaptureCount` sets the total automatic camera frames from 1 to 10,
 including the first readable frame. The example above uses 1 to capture
@@ -191,6 +194,7 @@ midnight UTC. The older `ymd` and `dmy` settings still produce their original
 | `issuingCountryCode` | Three-letter issuing country or organization code |
 | `sex` | MRZ sex marker, `M` or `F` when present |
 | `optionalData` | Issuer-defined MRZ data, only when its check digit passes |
+| `mrz` | Normalized OCR-read MRZ lines; check against the passport |
 | `passportImg` | Selected or captured image file |
 
 The scanner dispatches a bubbling `passportscanner:result` event on the
@@ -247,6 +251,8 @@ foreach ($travelers as $index => $traveler) {
         ->textInput(['class' => 'traveler-sex']);
     echo $form->field($traveler, "[$index]optionalData")
         ->textInput(['class' => 'traveler-optional-data']);
+    echo $form->field($traveler, "[$index]mrz")
+        ->textarea(['class' => 'traveler-mrz']);
     echo $form->field($traveler, "[$index]passportImg")
         ->fileInput(['class' => 'traveler-passport-image']);
     echo $form->field($traveler, "[$index]passportNo")
@@ -269,6 +275,7 @@ foreach ($travelers as $index => $traveler) {
                 'issuingCountryCode' => '.traveler-issuing-country-code',
                 'sex' => '.traveler-sex',
                 'optionalData' => '.traveler-optional-data',
+                'mrz' => '.traveler-mrz',
                 'passportImg' => '.traveler-passport-image',
             ],
             'scannerOptions' => [
@@ -276,6 +283,8 @@ foreach ($travelers as $index => $traveler) {
                 'dateFormat' => 'Y-m-d',
                 'autoCaptureCount' => 3,
                 'autoCaptureHoldSeconds' => 2,
+                'language' => 'en',
+                'statusMessages' => [],
                 'logResults' => false,
                 'countryNames' => [
                     'MY' => 'Malaysia',
@@ -307,6 +316,27 @@ If a row is hidden but kept in the DOM, call
 `PassportScanner.initFromElement(scannerInput)` when showing it again.
 `PassportScanner.stop()` without an argument stops all scanners. Keep Yii2
 input IDs and model indexes unique when cloning rows.
+
+
+## Status messages (v2.2.0)
+
+This release requires core `^2.2`. Status text uses short instructions:
+green with a tick for success, yellow with a warning triangle for missing
+details, and red with a cross for failure. Scanning pulses blue. Icons are
+bundled and do not require Font Awesome. Always check all details before saving.
+
+```php
+'scannerOptions' => [
+    'language' => 'en', // en: English (default), ms: Malay, zh: Simplified Chinese
+    'statusMessages' => [], // Optional custom wording by message key
+],
+```
+
+The language setting changes status messages only, not button labels or OCR.
+Each scanner can have its own language. Unknown languages fall back to English.
+`statusMessages` can override individual messages or supply another language.
+See the [message keys and placeholders](https://github.com/tjAUP/passportscanner#status-language-and-wording).
+The `mrz` result contains normalized OCR-read lines, not guaranteed exact text.
 
 ## Local OCR assets and privacy
 
